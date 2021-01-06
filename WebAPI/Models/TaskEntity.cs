@@ -34,14 +34,19 @@ namespace WebAPI.Models
         [Column("TaskCount")]
         public int TaskCount { get; set; }
 
-        // 0:美观 1:安全 2:天气
+        // 0:美观 1:安全 2:生态 3:贫穷 4:繁忙
         [Column("Level")]
         public int Level { get; set; }
 
         [Column("Area")]
         public string Area { get; set; }
 
+        [Column("TaskComplete")]
+        public bool TaskComplete { get; set; }
+
         public virtual List<RateEntity> Rates { get; set; }
+
+        public virtual List<PairwiseEntity> Pairwises { get; set; }
 
     }
 }

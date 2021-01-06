@@ -17,7 +17,7 @@ namespace WebAPI.Controllers
         }
 
         // POST: api/Login
-        //查询用户信息
+        //登录，登录成功则反馈用户信息，包括默认的任务
         [HttpPost]
         [ActionName("login")]
         public object Login([FromBody] UserLoginInfo userLoginInfo)
@@ -48,10 +48,11 @@ namespace WebAPI.Controllers
                 userInfoMatch.LastLoginDate = DateTime.Now;
                 var i = _repository.UpdateUser(userInfoMatch).Result;
 
-                var taskID = 0;
-                if (userInfoMatch.Tasks.Count > 0)
+                var taskID = -1;
+                var defaultTask = userInfoMatch.Tasks?.Find(p => p.TaskComplete == false);
+                if (defaultTask != null)
                 {
-                    taskID = userInfoMatch.Tasks[0].IDtask;
+                    taskID = defaultTask.IDtask;
                 }
 
                 return new { success = true, defaultTaskID = taskID, reason = msgToRet, userInfo = userInfoMatch };
@@ -62,18 +63,17 @@ namespace WebAPI.Controllers
             }
         }
 
-        ///
-
+        // POST: api/Update
+        //修改用户信息
         [HttpPost]
         [ActionName("update")]
-
         public object Update([FromBody] UserEntity userInfo)
         {
             //修改用户相关信息
             try
             {
                 var i = _repository.UpdateUser(userInfo).Result;
-                return new { success = i > 0, reason = "i=" + i };
+                return new { success = i > 0, reason = "成功对象数量：" + i };
             }
             catch (Exception e)
             {
@@ -81,7 +81,34 @@ namespace WebAPI.Controllers
             }
         }
 
+        // POST: api/Register
+        [HttpPost]
+        [ActionName("register")]
+        public object Register([FromBody] UserLoginInfo userInfo)
+        {
+            //新增用户
+            try
+            {
+                if (_repository.QueryUserWithTaskByName(userInfo.userName).Result != null)
+                    return new { success = false, reason = "该用户已经存在" };
+                var user = new UserEntity
+                {
+                    Name = userInfo.userName,
+                    Password = userInfo.password,
+                    CreateDate = DateTime.Now,
+                    FaceID =1,                    
+                };
+                var i = _repository.CreateUser(user).Result;
+                return new { success = (i == 1), reason = "成功对象数量：" + i };
+            }
+            catch (Exception e)
+            {
+                return new { success = false, reason = e.Message };
+            }
 
+        }
+
+        // POST: api/CreateTask
         [HttpPost]
         [ActionName("createTask")]
         public object CreateTask([FromBody] TaskEntity task)

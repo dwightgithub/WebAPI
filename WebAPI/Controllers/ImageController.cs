@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 using WebAPI.Models;
 using WebAPI.Repositories;
@@ -25,11 +26,20 @@ namespace WebAPI.Controllers
             return task;
         }
 
-        // POST: api/Image
+        // POST: api/image
+        //提交任务
         [HttpPost]
-        public void Post([FromBody] string value)
+        public object Post([FromBody] TaskEntity task)
         {
-            
+            try
+            {
+                var i = _repository.CompleteTask(task).Result;
+                return new { success = i > 0, reason = "成功对象数量：" + i };
+            }
+            catch (Exception e)
+            {
+                return new { success = false, reason = e.Message };
+            }
         }
 
         // PUT: api/Image/5

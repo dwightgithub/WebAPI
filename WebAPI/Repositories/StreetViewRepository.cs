@@ -19,6 +19,11 @@ namespace WebAPI.Repositories
             this.dbContext = dbContext;
         }
 
+        /// <summary>
+        /// 根据用户名查询用户
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
         public async Task<UserEntity> QueryUserWithTaskByName(string name)
         {
             var user = await dbContext.Users.Include(o => o.Tasks)
@@ -27,9 +32,25 @@ namespace WebAPI.Repositories
             return user;
         }
 
+        /// <summary>
+        /// 更新用户信息
+        /// </summary>
+        /// <param name="user"></param>
+        /// <returns></returns>
         public async Task<int> UpdateUser(UserEntity user)
         {
             dbContext.Update(user);
+            return await dbContext.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// 新建用户
+        /// </summary>
+        /// <param name="user"></param>
+        /// <returns></returns>
+        public async Task<int> CreateUser(UserEntity user)
+        {
+            dbContext.Add(user);
             return await dbContext.SaveChangesAsync();
         }
 
@@ -42,18 +63,41 @@ namespace WebAPI.Repositories
         {
             //满足该task区域的ImageInfo
             var lstImageInfo = dbContext.ImageInfos.Where<ImageInfoEntity>
-                (p => p.District == task.Area||p.City==task.Area).ToList<ImageInfoEntity>();
+                (p => p.District == task.Area || p.City == task.Area).ToList<ImageInfoEntity>();
 
-            task.Rates = new List<RateEntity>();
-            //为task创建对应数量的Rate
-            for (int i = 0; i < task.TaskCount; i++)
+            if (task.TaskType == 0)
             {
-                int imageNO = rand.Next(lstImageInfo.Count);
-                var rateEntity = new RateEntity()
+                task.Rates = new List<RateEntity>();
+                //为task创建对应数量的Rate
+                for (int i = 0; i < task.TaskCount; i++)
                 {
-                    PicID = lstImageInfo[imageNO].ImageInfoID,
-                };
-                task.Rates.Add(rateEntity);
+                    int imageNO = rand.Next(lstImageInfo.Count);
+                    var rateEntity = new RateEntity()
+                    {
+                        PicID = lstImageInfo[imageNO].ImageInfoID,
+                    };
+                    task.Rates.Add(rateEntity);
+                }
+            }
+            else if (task.TaskType == 1)
+            {
+                task.Pairwises = new List<PairwiseEntity>();
+                //为task创建对应数量的Pairwise
+                for (int i = 0; i < task.TaskCount; i++)
+                {
+                    int picANO = rand.Next(lstImageInfo.Count);
+                    int picBNO = rand.Next(lstImageInfo.Count);
+                    var pairwiseEntity = new PairwiseEntity()
+                    {
+                        PicAID = lstImageInfo[picANO].ImageInfoID,
+                        PicBID = lstImageInfo[picBNO].ImageInfoID,
+                    };
+                    task.Pairwises.Add(pairwiseEntity);
+                }
+            }
+            else
+            {
+                throw new Exception("任务类型不对");
             }
 
             //创建Task
@@ -61,12 +105,30 @@ namespace WebAPI.Repositories
             return dbContext.SaveChangesAsync();
         }
 
+        /// <summary>
+        /// 完成任务
+        /// </summary>
+        /// <param name="user"></param>
+        /// <returns></returns>
+        public async Task<int> CompleteTask(TaskEntity task)
+        {
+            task.CompleteTime = DateTime.Now;
+            task.TaskComplete = true;
+            dbContext.Update(task);
+            return await dbContext.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// 根据任务号查询任务信息
+        /// </summary>
+        /// <param name="taskID"></param>
+        /// <returns></returns>
         public async Task<TaskEntity> QueryTaskWithInfoByID(int taskID)
         {
             //1、按照taskID查找出Task
             //2、加载task对应的List<Rate>
             //3、加载每个Rate对应的ImageInfo
-            var task =await dbContext.Tasks.Include(o => o.Rates).ThenInclude(o=>o.ImageInfo)
+            var task = await dbContext.Tasks.Include(o => o.Rates).ThenInclude(o => o.ImageInfo)
                 .SingleOrDefaultAsync(task => task.IDtask == taskID);
 
             //4、返回Task
@@ -74,8 +136,8 @@ namespace WebAPI.Repositories
             {
                 task.Rates[i].IDinList = i;
             }
-            
-            return task; 
+
+            return task;
         }
     }
 }
