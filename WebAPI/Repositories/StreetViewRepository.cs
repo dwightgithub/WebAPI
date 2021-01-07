@@ -77,6 +77,7 @@ namespace WebAPI.Repositories
             var lstImageInfo = dbContext.ImageInfos.Where<ImageInfoEntity>
                 (p => p.District == task.Area || p.City == task.Area).ToList<ImageInfoEntity>();
 
+            task.CreateTime = DateTime.Now;
             if (task.TaskType == 0)
             {
                 task.Rates = new List<RateEntity>();
