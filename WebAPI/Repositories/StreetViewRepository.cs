@@ -44,6 +44,18 @@ namespace WebAPI.Repositories
         }
 
         /// <summary>
+        /// 用户完成任务，增长经验值
+        /// </summary>
+        /// <returns></returns>
+        public async Task<int> UserAddEXP(int userID,int exp)
+        {
+            var user = dbContext.Users.FirstOrDefault(u => u.IdUserInfo == userID);
+            user.Experience += exp;
+            dbContext.Update(user);
+            return await dbContext.SaveChangesAsync();
+        }
+
+        /// <summary>
         /// 新建用户
         /// </summary>
         /// <param name="user"></param>
@@ -114,6 +126,8 @@ namespace WebAPI.Repositories
         {
             task.CompleteTime = DateTime.Now;
             task.TaskComplete = true;
+            task.Pairwises?.ForEach(p => { p.ImageAInfo = null;p.ImageBInfo = null; });
+            task.Rates?.ForEach(p => p.ImageInfo = null);
             dbContext.Update(task);
             return await dbContext.SaveChangesAsync();
         }
@@ -128,14 +142,30 @@ namespace WebAPI.Repositories
             //1、按照taskID查找出Task
             //2、加载task对应的List<Rate>
             //3、加载每个Rate对应的ImageInfo
-            var task = await dbContext.Tasks.Include(o => o.Rates).ThenInclude(o => o.ImageInfo)
+            TaskEntity task;
+            var taskType = dbContext.Tasks.SingleOrDefault(task => task.IDtask == taskID)?.TaskType;
+            if (taskType == 0)//Rate
+            {
+                task = await dbContext.Tasks.Include(o => o.Rates).ThenInclude(o => o.ImageInfo)
                 .SingleOrDefaultAsync(task => task.IDtask == taskID);
 
-            //4、返回Task
-            for (int i = 0; i < task.Rates.Count; i++)
-            {
-                task.Rates[i].IDinList = i;
+                for (int i = 0; i < task.Rates.Count; i++)
+                {
+                    task.Rates[i].IDinList = i;
+                }
             }
+            else
+            {
+                task = await dbContext.Tasks
+                    .Include(o => o.Pairwises).ThenInclude(o=>o.ImageAInfo)
+                    .Include(o => o.Pairwises).ThenInclude(o => o.ImageBInfo)
+                .SingleOrDefaultAsync(task => task.IDtask == taskID);
+                for (int i = 0; i < task.Pairwises.Count; i++)
+                {
+                    task.Pairwises[i].IDinList = i;
+                }
+            }
+            
 
             return task;
         }

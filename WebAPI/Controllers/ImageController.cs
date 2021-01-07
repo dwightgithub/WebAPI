@@ -22,19 +22,20 @@ namespace WebAPI.Controllers
         public TaskEntity Get(int num)
         {
             var task = _repository.QueryTaskWithInfoByID(num).Result;
-            
+
             return task;
         }
 
         // POST: api/image
         //提交任务
         [HttpPost]
-        public object Post([FromBody] TaskEntity task)
+        public object CommitTask([FromBody] TaskEntity task)
         {
             try
             {
                 var i = _repository.CompleteTask(task).Result;
-                return new { success = i > 0, reason = "成功对象数量：" + i };
+                var j = _repository.UserAddEXP(task.UserID, task.TaskCount).Result;
+                return new { success = i > 0 && j > 0, reason = "成功对象数量：" + i };
             }
             catch (Exception e)
             {

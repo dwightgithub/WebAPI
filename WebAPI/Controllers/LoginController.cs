@@ -49,13 +49,22 @@ namespace WebAPI.Controllers
                 var i = _repository.UpdateUser(userInfoMatch).Result;
 
                 var taskID = -1;
+                var taskType = 0;
                 var defaultTask = userInfoMatch.Tasks?.Find(p => p.TaskComplete == false);
                 if (defaultTask != null)
                 {
                     taskID = defaultTask.IDtask;
+                    taskType = defaultTask.TaskType;
                 }
 
-                return new { success = true, defaultTaskID = taskID, reason = msgToRet, userInfo = userInfoMatch };
+                return new
+                {
+                    success = true,
+                    defaultTaskID = taskID,
+                    taskType,
+                    reason = msgToRet,
+                    userInfo = userInfoMatch
+                };
             }
             catch (Exception e)
             {
@@ -96,7 +105,7 @@ namespace WebAPI.Controllers
                     Name = userInfo.userName,
                     Password = userInfo.password,
                     CreateDate = DateTime.Now,
-                    FaceID =1,                    
+                    FaceID = 1,
                 };
                 var i = _repository.CreateUser(user).Result;
                 return new { success = (i == 1), reason = "成功对象数量：" + i };
